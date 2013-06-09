@@ -1,0 +1,4 @@
+resource:           sawstop
+activation_seconds: 1800
+auth_server_url:    http://10.100.200.100:3000
+
