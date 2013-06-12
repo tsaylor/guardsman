@@ -1,5 +1,5 @@
 import unittest
-from wiegand import serial_to_wiegand
+from lib.wiegand import serial_to_wiegand
 
 TAG_DATA = [{
     'serial': '\x022700DE21BB63\r\n\x03',

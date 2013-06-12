@@ -1,6 +1,7 @@
 import time
 import urllib2
 import argparse
+import threading
 
 import yaml
 import serial
@@ -16,13 +17,22 @@ settings = yaml.load(open(args.settings))
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(11, GPIO.OUT)  # controls the relay for tool activation
 
-port = serial.Serial("/dev/ttyAMA0", baudrate=9600, timeout=3.0)
+port = serial.Serial("/dev/ttyAMA0", baudrate=9600, timeout=1.0)
+resource_lock = threading.Lock()
+seconds_left = 1
 
 
 def activate_resource():
-    GPIO.output(11, GPIO.HIGH)
-    time.sleep(settings['activation_seconds'])
-    GPIO.output(11, GPIO.LOW)
+    global seconds_left, resource_lock
+    seconds_left = settings['activation_seconds']
+    if resource_lock.acquire(False):  # non-blocking lock acquisition
+        GPIO.output(11, GPIO.HIGH)
+        while seconds_left > 0:
+            time.sleep(1)
+            seconds_left = seconds_left - 1
+            print "seconds left: %d" % seconds_left
+        GPIO.output(11, GPIO.LOW)
+        resource_lock.release()
 
 while True:
     input = port.read(16)
@@ -37,4 +47,6 @@ while True:
                 raise
         else:
             if response.getcode() == 200:
-                activate_resource()
+                activate_thread = threading.Thread(target=activate_resource)
+                activate_thread.start()
+
